@@ -19,3 +19,14 @@ data/processed/*.csv
 reports/*.csv
 reports/*.json
 reports/figures/*.png
+reports/ui_runs/
+
+# Temporary and release artifacts
+data/tmp_uploads/
+release/
+output/
+notebooks/
+
+# Office lock/temp files
+~$*.xlsx
+*.code-workspace
