@@ -61,7 +61,7 @@ pip install -r requirements.txt
 Если у вас на руках только один файл, например `1.xdex`, используйте:
 
 ```powershell
-.\run_single_xdex.ps1 -XdexPath "C:\Users\kirill.yakupov.000\Downloads\Telegram Desktop\1.xdex"
+.\run_single_xdex.ps1 -XdexPath "Путь к файлу"
 ```
 
 Что вы получите:
@@ -164,14 +164,7 @@ docker compose up --build
 - Объем данных пока мал для устойчивой оценки и генерализации.
 - Для финальной сдачи нужна экспертная разметка (ground truth) и расширение набора тестов.
 
-## 7) Рекомендации к следующему этапу
-
-- Получить минимум 50+ полноценных тестов с экспертными метками.
-- Проверить и откалибровать порог/вероятности.
-- Добавить hold-out тест и калибровку вероятностей (`CalibratedClassifierCV`).
-- Подготовить презентацию с архитектурой, метриками и интерпретацией важных каналов.
-
-## 8) Tests And Reproducibility
+## 7) Tests And Reproducibility
 
 Unit and regression tests are stored in `tests/`:
 - parser unit tests for DOCX/XDEX (`tests/test_parsers.py`);
