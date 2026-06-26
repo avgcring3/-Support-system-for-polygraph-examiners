@@ -27,6 +27,16 @@ from src.xdex_epp import run_xdex_epp_detailed  # noqa: E402
 MODEL_PATH = PROJECT_ROOT / "models" / "best_model.pkl"
 RUNS_DIR = PROJECT_ROOT / "reports" / "ui_runs"
 FEEDBACK_PATH = PROJECT_ROOT / "data" / "processed" / "feedback_labels.csv"
+DEMO_FILE_PATH = PROJECT_ROOT / "data" / "raw" / "xdex" / "1.xdex"
+
+
+class DemoUploadedFile:
+    def __init__(self, path: Path):
+        self.path = path
+        self.name = path.name
+
+    def getvalue(self) -> bytes:
+        return self.path.read_bytes()
 
 
 def inject_styles() -> None:
@@ -902,7 +912,7 @@ def main() -> None:
         <div class="card">
           <b>Single input file:</b><br/>
           Upload one of: <b>XDEX/XDX</b> or <b>DOCX/CSV/XLSX</b>, then click run.<br/>
-          The app processes the format automatically and returns one EPP result.
+          Or click <b>Демонстрация</b> to load a built-in example with a full question route.
         </div>
         """,
         unsafe_allow_html=True,
@@ -914,7 +924,23 @@ def main() -> None:
         key="unified_input",
     )
 
-    run_clicked = st.button("Запустить полный анализ", use_container_width=True)
+    action_col, demo_col = st.columns([2, 1])
+    with action_col:
+        run_clicked = st.button("Запустить полный анализ", use_container_width=True)
+    with demo_col:
+        demo_clicked = st.button("Демонстрация", use_container_width=True)
+
+    if demo_clicked:
+        if not DEMO_FILE_PATH.exists():
+            st.error(f"Демо-файл не найден: {DEMO_FILE_PATH}")
+        else:
+            with st.spinner("Загружаю демонстрационный кейс..."):
+                try:
+                    st.session_state["analysis_result"] = run_analysis(DemoUploadedFile(DEMO_FILE_PATH))
+                    st.session_state["analysis_source_name"] = DEMO_FILE_PATH.name
+                    st.success(f"Демо-кейс загружен: {DEMO_FILE_PATH.name}")
+                except Exception as exc:
+                    st.error(f"Ошибка демонстрации: {exc}")
 
     if run_clicked:
         if input_file is None:
@@ -923,13 +949,18 @@ def main() -> None:
             with st.spinner("Выполняю анализ..."):
                 try:
                     st.session_state["analysis_result"] = run_analysis(input_file)
+                    st.session_state["analysis_source_name"] = input_file.name
                 except Exception as exc:
                     st.error(f"Ошибка анализа: {exc}")
 
     result = st.session_state.get("analysis_result")
     if not result:
-        st.info("Загрузите файлы и нажмите кнопку выше.")
+        st.info("Загрузите файл и нажмите кнопку анализа или используйте демонстрационный кейс.")
         return
+
+    source_name = st.session_state.get("analysis_source_name")
+    if source_name:
+        st.caption(f"Текущий кейс: {source_name}")
 
     if "epp" in result:
         st.markdown("## ЭПП результат")
