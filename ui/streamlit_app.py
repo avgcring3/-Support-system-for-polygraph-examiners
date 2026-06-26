@@ -18,7 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.parser import parse_docx_table, parse_xdex_file  # noqa: E402
 from src.predict import load_model_bundle, predict_df, summarize_predictions  # noqa: E402
-from src.preprocess import build_feature_dataset, normalize_parameter_name  # noqa: E402
+from src.preprocess import build_feature_dataset, normalize_parameter_name, run_preprocess  # noqa: E402
 from src.process_single_xdex import run_single_xdex  # noqa: E402
 from src.train import train_models  # noqa: E402
 from src.xdex_epp import run_xdex_epp_detailed  # noqa: E402
@@ -206,8 +206,41 @@ def show_header() -> None:
 @st.cache_resource
 def get_model_bundle() -> dict[str, Any] | None:
     if not MODEL_PATH.exists():
+        bootstrap_model_artifacts()
+    if not MODEL_PATH.exists():
         return None
     return load_model_bundle(MODEL_PATH)
+
+
+def bootstrap_model_artifacts() -> None:
+    """Build generated model artifacts on hosts where git-ignored files are absent."""
+    processed_dir = PROJECT_ROOT / "data" / "processed"
+    models_dir = PROJECT_ROOT / "models"
+    reports_dir = PROJECT_ROOT / "reports"
+    docx_dir = PROJECT_ROOT / "data" / "raw" / "docx"
+    xdex_dir = PROJECT_ROOT / "data" / "raw" / "xdex"
+
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    models_dir.mkdir(parents=True, exist_ok=True)
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    xdex_input = xdex_dir if xdex_dir.exists() else None
+    long_df, feat_df = run_preprocess(
+        docx_dir=docx_dir,
+        xdex_dir=xdex_input,
+        processed_dir=processed_dir,
+        weak_label_threshold=0.55,
+    )
+    if long_df.empty or feat_df.empty:
+        raise ValueError("Не удалось собрать обучающий датасет из data/raw.")
+
+    train_models(
+        features_path=processed_dir / "polygram_features.csv",
+        models_dir=models_dir,
+        reports_dir=reports_dir,
+        preferred_label=None,
+        feedback_path=FEEDBACK_PATH,
+    )
 
 
 def save_uploaded(uploaded_file: Any, folder: Path) -> Path:
